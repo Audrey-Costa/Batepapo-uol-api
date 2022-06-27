@@ -101,4 +101,17 @@ server.get('/messages', async (req, res)=>{
 
 })
 
+server.post('/status', async (req, res)=>{
+    try {
+        const user = await db.collection("users").findOne({name: req.headers.user})
+        if(!user){
+            return res.sendStatus(404)
+        }
+        user.lastStatus = Date.now();
+        console.log(user)
+        return res.sendStatus(200)
+    } catch (error) {
+        return res.sendStatus(500)
+    }
+})
 server.listen(5000, ()=> console.log("Server On"))
