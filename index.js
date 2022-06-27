@@ -14,17 +14,27 @@ let db
 await mongoClient.connect(()=>{db = mongoClient.db("Batepapo_UOL")})
 
 const userSchema = joi.object({
-    name: joi.string().required(),
-    lastStatus: joi.number().required()
+    name: joi.string().required()
+})
+
+const messageSchema = joi.object({
+    to: joi.string().required(),
+    text: joi.string().required(),
+    type: joi.string().valid("message", "private_message").required()
 })
 
 server.post('/participantes', async (req, res)=>{
     const user = req.body
-    user.lastStatus = Date.now()
-    
     const validate = userSchema.validate(user, {abortEarly: false});
+    user.lastStatus = Date.now()
+    const loginMessage = {
+        from: user.name,
+        to: "Todos",
+        text: "entra na sala...",
+        type: "status",
+        time: dayjs(Date.now()).format("HH:mm:ss")}
+    
     if(validate.error){
-        console.log(validate.error.message);
         res.sendStatus(422);
         return
     }
@@ -36,7 +46,7 @@ server.post('/participantes', async (req, res)=>{
         }
 
         await db.collection("users").insertOne(user)
-        await db.collection("messages").insertOne({from: user.name, to: "Todos", text: "entra na sala...", type: "status", time: dayjs(Date.now()).format("HH:mm:ss")})
+        await db.collection("messages").insertOne(loginMessage)
         return res.sendStatus(201)
         
     } catch (error) {
@@ -54,6 +64,24 @@ server.get('/participantes', async (req, res)=>{
     }
 })
 
-
+server.post('/messages', async (req, res)=>{
+    const message = req.body
+    const validate = messageSchema.validate(message, {abortEarly: false});
+    message.time = dayjs(Date.now()).format("HH:mm:ss");
+    if(validate.error){
+        res.sendStatus(422);
+        return
+    }
+    try {
+        const user = await db.collection("users").findOne({name: req.headers.user});
+        if(!user){
+            return  res.sendStatus(422)
+        }
+        await db.collection("messages").insertOne(message)
+        return res.sendStatus(201)
+    } catch (error) {
+        return res.sendStatus(500)
+    }
+})
 
 server.listen(5000, ()=> console.log("Server On"))
