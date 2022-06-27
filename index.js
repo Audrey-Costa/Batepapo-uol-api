@@ -92,8 +92,9 @@ server.post('/messages', async (req, res)=>{
 server.get('/messages', async (req, res)=>{
     const limit = parseInt(req.query.limit)
     try {
-        const messages = await db.collection("messages").find().toArray();
-        return res.send(messages)
+        const messages = await db.collection("messages").find({$or:[{from: req.headers.user},{to: req.headers.user},{to: "Todos"},{type: "message"}]}).toArray();
+        const messagesLimited = messages.slice(-limit)
+        return res.send(messagesLimited)
     } catch (error) {
         return response.status(500)
     }
