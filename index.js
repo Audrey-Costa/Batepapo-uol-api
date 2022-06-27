@@ -62,7 +62,6 @@ server.post('/participants', async (req, res)=>{
         if(anyUser){
             return res.sendStatus(409)
         }
-        console.log(anyUser, "Verificou")
         await db.collection("users").insertOne(user)
         await db.collection("messages").insertOne(loginMessage)
         return res.sendStatus(201)
@@ -97,7 +96,7 @@ server.post('/messages', async (req, res)=>{
     try {
         const user = await db.collection("users").findOne({name: req.headers.user});
         if(!user){
-            return  res.sendStatus(422)
+            return res.sendStatus(422)
         }
         await db.collection("messages").insertOne(message)
         return res.sendStatus(201)
@@ -132,20 +131,47 @@ server.post('/status', async (req, res)=>{
 
 server.delete("/messages/:messageId", async (req, res)=>{
     const messageId = req.params.messageId
-    console.log("deleta ae", messageId)
     try {
-        const user = await db.collection("users").findOne({name: req.headers.user})
         const message = await db.collection("messages").findOne({_id: new ObjectId(messageId)})
+        const user = await db.collection("users").findOne({name: message.from})
         if(!message){
             return res.sendStatus(404)
         }
-        if(user.name !== message.from){
+        if(user.name !== req.headers.user){
             return res.sendStatus(401)
         }
 
         await db.collection("messages").deleteOne({_id: new ObjectId(messageId)})
         return res.sendStatus(200)
 
+    } catch (error) {
+        return res.sendStatus(500)
+    }
+})
+
+server.put("/messages/:messageId", async (req, res)=>{
+    const messageId = req.params.messageId
+    const validate = messageSchema.validate(req.body, {abortEarly: false});
+    const newMessage = {
+        to: req.body.to,
+        text: req.body.text,
+        type: req.body.type,
+        time: dayjs(Date.now()).format("HH:mm:ss")};
+    try {
+        const message = await db.collection("messages").findOne({_id: new ObjectId(messageId)})
+        const user = await db.collection("users").findOne({name: message.from});
+        if(!user){
+            return res.sendStatus(422)
+        }
+        if(!message){
+            return res.sendStatus(404)
+        }
+        if(user.name !== req.headers.user){
+            return res.sendStatus(401)
+        }
+
+        await db.collection("messages").updateOne({_id: new ObjectId(messageId)}, {$set: newMessage})
+        return res.sendStatus(200)
     } catch (error) {
         return res.sendStatus(500)
     }
