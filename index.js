@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { response } from 'express';
 import cors from 'cors';
 import dayjs from 'dayjs';
 import { MongoClient, ObjectId } from 'mongodb';
@@ -23,7 +23,7 @@ const messageSchema = joi.object({
     type: joi.string().valid("message", "private_message").required()
 })
 
-server.post('/participantes', async (req, res)=>{
+server.post('/participants', async (req, res)=>{
     const user = req.body
     const validate = userSchema.validate(user, {abortEarly: false});
     user.lastStatus = Date.now()
@@ -55,12 +55,12 @@ server.post('/participantes', async (req, res)=>{
     }
 })
 
-server.get('/participantes', async (req, res)=>{
+server.get('/participants', async (req, res)=>{
     try {
         const participants = await db.collection("users").find().toArray();
         res.send(participants)
     } catch (error) {
-        res.sendStatus(500)
+        return res.sendStatus(500)
     }
 })
 
@@ -89,6 +89,15 @@ server.post('/messages', async (req, res)=>{
     }
 })
 
+server.get('/messages', async (req, res)=>{
+    const limit = parseInt(req.query.limit)
+    try {
+        const messages = await db.collection("messages").find().toArray();
+        return res.send(messages)
+    } catch (error) {
+        return response.status(500)
+    }
 
+})
 
 server.listen(5000, ()=> console.log("Server On"))
