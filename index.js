@@ -65,9 +65,14 @@ server.get('/participantes', async (req, res)=>{
 })
 
 server.post('/messages', async (req, res)=>{
-    const message = req.body
-    const validate = messageSchema.validate(message, {abortEarly: false});
-    message.time = dayjs(Date.now()).format("HH:mm:ss");
+    const validate = messageSchema.validate(req.body, {abortEarly: false});
+    const message = {
+        from: req.headers.user,
+        to: req.body.to,
+        text: req.body.text,
+        type: req.body.type,
+        time: dayjs(Date.now()).format("HH:mm:ss")}
+
     if(validate.error){
         res.sendStatus(422);
         return
@@ -83,5 +88,7 @@ server.post('/messages', async (req, res)=>{
         return res.sendStatus(500)
     }
 })
+
+
 
 server.listen(5000, ()=> console.log("Server On"))
