@@ -23,6 +23,28 @@ const messageSchema = joi.object({
     type: joi.string().valid("message", "private_message").required()
 })
 
+    setInterval(async ()=>{let 
+        timer = Date.now() - 10000;
+        
+
+        let users = await db.collection("users").find({lastStatus: {$lt: timer}}).toArray()
+        const usersId = users.map(user=> user._id)
+        console.log(usersId, 1)
+        await db.collection("users").deleteMany({_id: {$in: usersId}})
+        users.map(async user=>{
+            const logoutMessage = {
+                from: user.name,
+                to: "Todos",
+                text: "sai da sala...",
+                type: "status",
+                time: dayjs(Date.now()).format("HH:mm:ss")
+            }
+            console.log(logoutMessage)
+            await db.collection("messages").insertOne(logoutMessage)
+        })
+
+    }, 15000);
+
 server.post('/participants', async (req, res)=>{
     const user = req.body
     const validate = userSchema.validate(user, {abortEarly: false});
@@ -107,8 +129,8 @@ server.post('/status', async (req, res)=>{
         if(!user){
             return res.sendStatus(404)
         }
-        user.lastStatus = Date.now();
-        console.log(user)
+        await db.collection("users").updateOne({_id: user._id}, {$set: {lastStatus: Date.now()}});
+        console.log(user, 2)
         return res.sendStatus(200)
     } catch (error) {
         return res.sendStatus(500)
