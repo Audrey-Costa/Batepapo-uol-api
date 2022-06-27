@@ -129,4 +129,25 @@ server.post('/status', async (req, res)=>{
         return res.sendStatus(500)
     }
 })
+
+server.delete("/messages/:messageId", async (req, res)=>{
+    const messageId = req.params.messageId
+    console.log("deleta ae", messageId)
+    try {
+        const user = await db.collection("users").findOne({name: req.headers.user})
+        const message = await db.collection("messages").findOne({_id: new ObjectId(messageId)})
+        if(!message){
+            return res.sendStatus(404)
+        }
+        if(user.name !== message.from){
+            return res.sendStatus(401)
+        }
+
+        await db.collection("messages").deleteOne({_id: new ObjectId(messageId)})
+        return res.sendStatus(200)
+
+    } catch (error) {
+        return res.sendStatus(500)
+    }
+})
 server.listen(5000, ()=> console.log("Server On"))
