@@ -23,13 +23,10 @@ const messageSchema = joi.object({
     type: joi.string().valid("message", "private_message").required()
 })
 
-    setInterval(async ()=>{let 
-        timer = Date.now() - 10000;
-        
-
+    setInterval(async ()=>{
+        let timer = Date.now() - 10000;
         let users = await db.collection("users").find({lastStatus: {$lt: timer}}).toArray()
         const usersId = users.map(user=> user._id)
-        console.log(usersId, 1)
         await db.collection("users").deleteMany({_id: {$in: usersId}})
         users.map(async user=>{
             const logoutMessage = {
@@ -39,7 +36,6 @@ const messageSchema = joi.object({
                 type: "status",
                 time: dayjs(Date.now()).format("HH:mm:ss")
             }
-            console.log(logoutMessage)
             await db.collection("messages").insertOne(logoutMessage)
         })
 
@@ -62,17 +58,16 @@ server.post('/participants', async (req, res)=>{
     }
     try {
 
-        const anyUser = await db.collection("users").findOne({user: user.name})
+        const anyUser = await db.collection("users").findOne({name: user.name})
         if(anyUser){
             return res.sendStatus(409)
         }
-
+        console.log(anyUser, "Verificou")
         await db.collection("users").insertOne(user)
         await db.collection("messages").insertOne(loginMessage)
         return res.sendStatus(201)
         
     } catch (error) {
-        console.log(error)
         return res.status(500).send(error)
     }
 })
@@ -120,7 +115,6 @@ server.get('/messages', async (req, res)=>{
     } catch (error) {
         return response.status(500)
     }
-
 })
 
 server.post('/status', async (req, res)=>{
@@ -130,7 +124,6 @@ server.post('/status', async (req, res)=>{
             return res.sendStatus(404)
         }
         await db.collection("users").updateOne({_id: user._id}, {$set: {lastStatus: Date.now()}});
-        console.log(user, 2)
         return res.sendStatus(200)
     } catch (error) {
         return res.sendStatus(500)
