@@ -45,4 +45,15 @@ server.post('/participantes', async (req, res)=>{
     }
 })
 
+server.get('/participantes', async (req, res)=>{
+    try {
+        const participants = await db.collection("users").find().toArray();
+        res.send(participants)
+    } catch (error) {
+        res.sendStatus(500)
+    }
+})
+
+
+
 server.listen(5000, ()=> console.log("Server On"))
